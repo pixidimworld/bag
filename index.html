@@ -2,83 +2,117 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>PIXI | Carry the Story</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+    
     <style>
         :root {
             --cinematic-ease: cubic-bezier(0.4, 0, 0.2, 1);
             --bounce-ease: cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            /* Fluid Typography Variables */
+            --fs-hero: clamp(3rem, 8vw, 7rem);
+            --fs-desc: clamp(0.9rem, 1.5vw, 1.25rem);
         }
 
         body {
             margin: 0;
             padding: 0;
-            overflow: hidden;
+            overflow-x: hidden; /* Critical for slide animations */
             font-family: 'Inter', sans-serif;
             background-color: #fff;
+            height: 100vh; /* Lock height for app-like feel */
+            width: 100vw;
         }
 
-        h1, .hero-font {
-            font-family: 'Playfair Display', serif;
-        }
+        h1, .hero-font { font-family: 'Playfair Display', serif; }
 
-        /* Split Background */
+        /* --- RESPONSIVE BACKGROUND --- */
         .bg-container {
             position: fixed;
             inset: 0;
             display: flex;
+            flex-direction: column; /* Default: Mobile Stack */
             z-index: -1;
         }
 
         .bg-left {
-            width: 45%;
+            width: 100%;
+            height: 55%;
             background: #ffffff;
             background-image: radial-gradient(#efefef 1px, transparent 1px);
             background-size: 30px 30px;
+            transition: height 0.5s ease;
         }
 
         .bg-right {
-            width: 55%;
-            transition: background 1s var(--cinematic-ease);
+            width: 100%;
+            height: 45%;
+            transition: background 1s var(--cinematic-ease), height 0.5s ease;
+            position: relative;
         }
 
-        /* Hero Bag Falling and Sizing */
+        /* Desktop: Switch to Side-by-Side */
+        @media (min-width: 1024px) {
+            .bg-container { flex-direction: row; }
+            .bg-left { width: 45%; height: 100%; }
+            .bg-right { width: 55%; height: 100%; }
+        }
+
+        /* --- PRODUCT STAGE (THE BAG) --- */
         .product-stage {
             position: absolute;
-            top: 50%;
-            left: 45%; 
-            transform: translate(-50%, -50%);
-            width: 600px; 
-            height: 600px;
+            z-index: 30;
             pointer-events: none;
+            /* Default Mobile Positioning */
+            top: 55%; 
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 100%;
+            max-width: 320px;
+            height: 320px;
             display: flex;
             justify-content: center;
             align-items: center;
-            z-index: 30;
+            transition: all 0.5s ease;
         }
 
         .bag-image {
             max-width: 100%;
             max-height: 100%;
-            filter: drop-shadow(0 30px 60px rgba(0,0,0,0.4));
-            transform: translateY(-120vh); /* Initial state: Sky */
+            filter: drop-shadow(0 20px 40px rgba(0,0,0,0.4));
+            transform: translateY(-120vh); /* Start from sky */
             transition: transform 1.5s var(--bounce-ease), opacity 0.5s ease;
         }
 
-        .bag-image.landed {
-            transform: translateY(0);
+        .bag-image.landed { transform: translateY(0); }
+
+        /* Tablet Adjustments */
+        @media (min-width: 768px) and (max-width: 1023px) {
+            .product-stage { max-width: 450px; top: 50%; }
         }
 
-        /* --- NEW: Cinematic Price Tag --- */
+        /* Desktop Adjustments */
+        @media (min-width: 1024px) {
+            .product-stage {
+                top: 50%;
+                left: 45%; /* Sits on the split line */
+                width: 600px;
+                height: 600px;
+                max-width: none;
+            }
+        }
+
+        /* --- PRICE TAG --- */
         .price-floater {
             position: absolute;
-            top: 20%; 
-            right: 0%; 
-            width: 100px;
-            height: 100px;
+            /* Mobile Position */
+            top: -10px;
+            right: 10px;
+            width: 70px;
+            height: 70px;
             border-radius: 50%;
             background: rgba(255, 255, 255, 0.15);
             backdrop-filter: blur(12px);
@@ -88,61 +122,113 @@
             justify-content: center;
             align-items: center;
             color: white;
-            box-shadow: 0 15px 35px rgba(0,0,0,0.2);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
             z-index: 35;
             animation: floatBob 4s ease-in-out infinite;
-            transition: all 0.5s var(--cinematic-ease);
         }
 
-        .price-floater span {
-            display: block;
+        /* Desktop Price Tag */
+        @media (min-width: 1024px) {
+            .price-floater {
+                width: 100px;
+                height: 100px;
+                top: 15%;
+                right: 0%;
+            }
         }
-        
-        .currency { font-size: 0.8rem; opacity: 0.8; margin-bottom: -2px; }
-        .amount { font-size: 1.5rem; font-weight: 800; font-family: 'Playfair Display', serif; }
-        .usd { font-size: 0.6rem; letter-spacing: 0.2em; font-weight: 600; margin-top: 2px;}
+
+        .amount { font-size: 1.2rem; font-weight: 800; font-family: 'Playfair Display', serif; }
+        .usd { font-size: 0.5rem; letter-spacing: 0.2em; font-weight: 600; }
+        @media (min-width: 1024px) { .amount { font-size: 1.5rem; } .usd { font-size: 0.6rem; } }
 
         @keyframes floatBob {
             0%, 100% { transform: translateY(0px); }
-            50% { transform: translateY(-15px); }
+            50% { transform: translateY(-10px); }
         }
 
-        /* --- NEW: ThreeJS Container --- */
+        /* --- THREE.JS CONTAINER --- */
         #three-container {
             position: fixed;
-            bottom: 5%;
-            left: 5%; /* Bottom left corner for balance */
-            width: 200px;
-            height: 200px;
+            /* Mobile: Bottom Left, small */
+            bottom: 20px;
+            left: 20px;
+            width: 100px;
+            height: 100px;
             z-index: 25;
             pointer-events: none;
-            opacity: 0; /* Hidden initially */
+            opacity: 0;
             transition: opacity 1s ease;
         }
+        @media (min-width: 1024px) {
+            #three-container { width: 200px; height: 200px; bottom: 5%; left: 5%; }
+        }
 
-        /* Slide Transitions */
-        .slide-out-left { transform: translateX(-150vw) rotate(-10deg); opacity: 0; }
-        .slide-out-right { transform: translateX(150vw) rotate(10deg); opacity: 0; }
-        .slide-in-right { transform: translateX(100vw); opacity: 0; }
-        .slide-in-left { transform: translateX(-100vw); opacity: 0; }
+        /* --- UI & TEXT STACK --- */
+        .content-container {
+            position: fixed;
+            /* Mobile: Top Section */
+            top: 15%; 
+            left: 0;
+            width: 100%;
+            padding: 0 2rem;
+            z-index: 20;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
 
-        /* Navigation Styling */
-        .nav-link {
-            color: white;
-            letter-spacing: 0.2em;
+        /* Desktop: Left Aligned */
+        @media (min-width: 1024px) {
+            .content-container {
+                top: 50%;
+                left: 8%; /* Offset */
+                transform: translateY(-50%);
+                width: 35%;
+                text-align: left;
+                align-items: flex-start;
+                padding: 0;
+            }
+        }
+
+        #hero-title { font-size: var(--fs-hero); line-height: 0.9; margin-bottom: 1rem; color: #000; }
+        #hero-desc { font-size: var(--fs-desc); color: #666; margin-bottom: 2rem; max-width: 400px; }
+
+        /* --- NAVIGATION --- */
+        .nav-link { 
+            display: none; /* Hidden on mobile */
+        }
+        @media (min-width: 768px) {
+            .nav-link { display: inline-block; color: #000; margin-left: 2rem; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.1em; font-weight: 600; }
+        }
+
+        /* --- BUTTONS --- */
+        .cinematic-btn {
+            background: transparent;
+            color: #000;
+            border: 1px solid #000;
+            padding: 1rem 2rem;
             text-transform: uppercase;
+            letter-spacing: 0.2em;
             font-size: 0.7rem;
-            font-weight: 600;
-            transition: opacity 0.3s ease;
+            font-weight: 700;
+            transition: all 0.3s ease;
+            cursor: pointer;
         }
-        .nav-link:hover { opacity: 0.7; }
-
-        /* Content Stack */
-        .content-wrap {
-            transition: transform 1s var(--cinematic-ease), opacity 0.8s ease;
+        
+        @media (min-width: 1024px) {
+            .cinematic-btn {
+                writing-mode: vertical-rl; /* Sideways on Desktop */
+                text-orientation: mixed;
+                padding: 2.5rem 1rem;
+                border: none;
+                border-left: 2px solid rgba(0,0,0,0.1);
+            }
         }
 
-        /* Character Preview Box */
+        .cinematic-btn:hover { background: #000; color: #fff; }
+
+        /* --- CHARACTER PREVIEW (Side Box) --- */
         .char-box {
             position: absolute;
             right: 5%;
@@ -157,64 +243,48 @@
             overflow: hidden;
             z-index: 40;
             box-shadow: 0 20px 40px rgba(0,0,0,0.2);
-            transition: all 0.8s var(--cinematic-ease);
+            display: none; /* Hidden on Mobile */
         }
+        @media (min-width: 1024px) { .char-box { display: block; } }
 
-        .char-box img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            filter: brightness(0.8) contrast(1.2);
-            transition: transform 1s ease;
-        }
+        .char-box img { width: 100%; height: 100%; object-fit: cover; filter: brightness(0.8) contrast(1.2); }
 
-        .char-box:hover img {
-            transform: scale(1.1);
+        /* --- CONTROLS --- */
+        .controls-wrapper {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            display: flex;
+            gap: 15px;
+            z-index: 50;
         }
-
-        /* Buttons & Controls */
-        .cinematic-btn {
-            writing-mode: vertical-rl;
-            text-orientation: mixed;
-            border-left: 2px solid rgba(0,0,0,0.05);
-            padding: 2.5rem 1rem;
-            letter-spacing: 0.3em;
-            transition: all 0.4s ease;
-            background: transparent;
-        }
-        .cinematic-btn:hover {
-            background: #000;
-            color: #fff;
+        /* Adjust for mobile to not block content */
+        @media (max-width: 768px) {
+            .controls-wrapper { bottom: 20px; right: 20px; }
         }
 
         .control-btn {
-            width: 60px;
-            height: 60px;
+            width: 50px;
+            height: 50px;
             border-radius: 50%;
             background: rgba(255, 255, 255, 0.9);
             display: flex;
             align-items: center;
             justify-content: center;
             cursor: pointer;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            transition: transform 0.2s;
         }
-        .control-btn:hover {
-            background: white;
-            transform: scale(1.1) translateY(-5px);
-            box-shadow: 0 15px 30px rgba(0,0,0,0.15);
-        }
+        .control-btn:active { transform: scale(0.9); }
 
-        /* Initial UI Slide In */
-        .ui-hidden {
-            opacity: 0;
-            transform: translateY(30px);
-        }
-        .ui-visible {
-            opacity: 1;
-            transform: translateY(0);
-            transition: all 1s var(--cinematic-ease);
-        }
+        /* --- ANIMATION CLASSES --- */
+        .slide-out-left { transform: translateX(-150vw) rotate(-10deg); opacity: 0; }
+        .slide-out-right { transform: translateX(150vw) rotate(10deg); opacity: 0; }
+        .slide-in-right { transform: translateX(100vw); opacity: 0; }
+        .slide-in-left { transform: translateX(-100vw); opacity: 0; }
+
+        .ui-hidden { opacity: 0; transform: translateY(20px); }
+        .ui-visible { opacity: 1; transform: translateY(0); transition: all 1s var(--cinematic-ease); }
     </style>
 </head>
 <body>
@@ -226,31 +296,30 @@
 
     <div id="three-container"></div>
 
-    <header class="fixed top-0 left-0 w-full p-10 flex justify-between items-center z-50">
-        <div id="brand-logo" class="text-3xl font-black tracking-tighter hero-font text-black ui-hidden">PIXI</div>
-        <nav id="top-nav" class="flex space-x-12 pr-10 ui-hidden">
+    <header class="fixed top-0 left-0 w-full p-6 lg:p-10 flex justify-between items-center z-50">
+        <div id="brand-logo" class="text-2xl lg:text-3xl font-black tracking-tighter hero-font text-black ui-hidden">PIXI</div>
+        <nav id="top-nav" class="ui-hidden">
             <a href="#" class="nav-link">Shop</a>
             <a href="#" class="nav-link">Collections</a>
             <a href="#" class="nav-link">About</a>
+            <div class="lg:hidden text-black font-bold text-sm tracking-widest">MENU</div>
         </nav>
     </header>
 
-    <div class="fixed left-20 top-1/2 -translate-y-1/2 max-w-lg z-20">
-        <div id="content-stack" class="content-wrap ui-hidden">
-            <h1 id="hero-title" class="text-8xl mb-6 leading-none text-black font-black">Carry the Story</h1>
-            <p id="hero-desc" class="text-gray-500 text-xl mb-10 leading-relaxed font-light pr-12">
-                Movie-inspired bags designed for heroes, legends, and everyday storytellers.
-            </p>
-            <div class="flex items-start">
-                <button class="cinematic-btn uppercase text-[10px] font-bold tracking-widest text-black">
-                    Explore Collection
-                </button>
-            </div>
+    <div id="content-stack" class="content-container ui-hidden">
+        <h1 id="hero-title" class="hero-font font-black text-black">Carry the<br>Story</h1>
+        <p id="hero-desc" class="font-light">
+            Movie-inspired bags designed for heroes, legends, and everyday storytellers.
+        </p>
+        <div>
+            <button class="cinematic-btn">
+                Explore Collection
+            </button>
         </div>
     </div>
 
     <div class="product-stage">
-        <img id="main-bag" src="bag1.png" alt="Hero Bag" class="bag-image">
+        <img id="main-bag" src="https://placehold.co/600x600/png?text=Spider+Bag" alt="Hero Bag" class="bag-image">
         
         <div id="price-tag" class="price-floater ui-hidden">
             <span class="currency">$</span>
@@ -260,51 +329,55 @@
     </div>
 
     <div id="char-preview" class="char-box ui-hidden">
-        <img id="char-img" src="img1.png" alt="Character">
+        <img id="char-img" src="https://placehold.co/300x400/png?text=Hero+Shot" alt="Character">
     </div>
 
-    <div class="fixed bottom-12 right-12 flex space-x-6 z-50 ui-hidden" id="ui-controls">
-        <div onclick="prevSlide()" class="control-btn text-black">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+    <div class="controls-wrapper ui-hidden" id="ui-controls">
+        <div onclick="prevSlide()" class="control-btn text-black hover:bg-black hover:text-white">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
         </div>
-        <div onclick="nextSlide()" class="control-btn text-black">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+        <div onclick="nextSlide()" class="control-btn text-black hover:bg-black hover:text-white">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
         </div>
     </div>
 
     <script>
-        // --- DATA SETUP ---
+        // --- CONFIG & DATA ---
+        // Note: Using Placeholders for the demo. Replace URLs with your 'bag1.png', 'img1.png', etc.
         const slides = [
             {
                 id: 1,
-                bag: "bag1.png",
-                charImg: "img1.png",
-                title: "Carry the Story",
-                background: "#8B0000", // Spider-Man Red
+                bag: "https://placehold.co/600x600/8B0000/FFFFFF/png?text=Spider+Bag",
+                charImg: "https://placehold.co/300x400/8B0000/FFFFFF/png?text=Spidey",
+                title: "Carry the\nStory",
+                background: "#8B0000",
                 price: "13.99",
                 hex: 0x8B0000
             },
             {
                 id: 2,
-                bag: "bag2.png",
-                charImg: "img2.png",
-                title: "First Avenger",
-                background: "#001f3f", // Cap Blue
+                bag: "https://placehold.co/600x600/001f3f/FFFFFF/png?text=Cap+Bag",
+                charImg: "https://placehold.co/300x400/001f3f/FFFFFF/png?text=Captain",
+                title: "First\nAvenger",
+                background: "#001f3f",
                 price: "14.99",
                 hex: 0x001f3f
             },
             {
                 id: 3,
-                bag: "bag3.png",
-                charImg: "img3.png",
-                title: "God of Thunder",
-                background: "#004d00", // Loki/Thor Green
+                bag: "https://placehold.co/600x600/004d00/FFFFFF/png?text=Loki+Bag",
+                charImg: "https://placehold.co/300x400/004d00/FFFFFF/png?text=Loki",
+                title: "God of\nThunder",
+                background: "#004d00",
                 price: "15.00",
                 hex: 0x004d00
             }
         ];
 
         let currentIdx = 0;
+        let isAnimating = false;
+
+        // Elements
         const mainBag = document.getElementById('main-bag');
         const dynamicBg = document.getElementById('dynamic-bg');
         const contentStack = document.getElementById('content-stack');
@@ -313,19 +386,23 @@
         const priceVal = document.getElementById('price-val');
         const priceTag = document.getElementById('price-tag');
 
-        // --- THREE.JS SETUP (Superhero Artifact) ---
+        // --- THREE.JS SETUP ---
         let scene, camera, renderer, artifact, outerRing;
 
         function initThree() {
             const container = document.getElementById('three-container');
-            
+            const w = container.clientWidth;
+            const h = container.clientHeight;
+
             scene = new THREE.Scene();
-            camera = new THREE.PerspectiveCamera(75, 1, 0.1, 1000);
+            camera = new THREE.PerspectiveCamera(75, w / h, 0.1, 1000);
+            
             renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
-            renderer.setSize(200, 200);
+            renderer.setSize(w, h);
+            renderer.setPixelRatio(window.devicePixelRatio);
             container.appendChild(renderer.domElement);
 
-            // Create "Artifact" Core (Icosahedron)
+            // Object: Icosahedron
             const geometry = new THREE.IcosahedronGeometry(1.5, 0);
             const material = new THREE.MeshPhongMaterial({ 
                 color: 0x8B0000, 
@@ -337,28 +414,24 @@
             artifact = new THREE.Mesh(geometry, material);
             scene.add(artifact);
 
-            // Create Outer Ring (Torus)
+            // Object: Ring
             const ringGeo = new THREE.TorusGeometry(2.2, 0.05, 16, 100);
             const ringMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.3 });
             outerRing = new THREE.Mesh(ringGeo, ringMat);
             scene.add(outerRing);
 
-            // Lighting
+            // Lights
             const light = new THREE.PointLight(0xffffff, 2, 100);
             light.position.set(10, 10, 10);
             scene.add(light);
-            const ambientLight = new THREE.AmbientLight(0x404040);
-            scene.add(ambientLight);
+            scene.add(new THREE.AmbientLight(0x404040));
 
             camera.position.z = 5;
-
             animateThree();
         }
 
         function animateThree() {
             requestAnimationFrame(animateThree);
-            
-            // Gentle rotation
             if(artifact) {
                 artifact.rotation.x += 0.01;
                 artifact.rotation.y += 0.015;
@@ -367,7 +440,6 @@
                 outerRing.rotation.x -= 0.005;
                 outerRing.rotation.y += 0.005;
             }
-
             renderer.render(scene, camera);
         }
 
@@ -378,101 +450,118 @@
             }
         }
 
-        initThree(); // Start 3D
+        // Handle Resize for ThreeJS
+        window.addEventListener('resize', () => {
+            const container = document.getElementById('three-container');
+            const w = container.clientWidth;
+            const h = container.clientHeight;
+            renderer.setSize(w, h);
+            camera.aspect = w / h;
+            camera.updateProjectionMatrix();
+        });
 
-        // --- DOM ANIMATIONS ---
+        initThree();
 
-        // Initial Load Animations
+        // --- DOM ANIMATIONS & SLIDER ---
+
         window.addEventListener('DOMContentLoaded', () => {
             setTimeout(() => {
-                // UI Slide Ins
+                // Reveal UI
                 document.getElementById('brand-logo').classList.replace('ui-hidden', 'ui-visible');
                 document.getElementById('top-nav').classList.replace('ui-hidden', 'ui-visible');
                 document.getElementById('content-stack').classList.replace('ui-hidden', 'ui-visible');
                 document.getElementById('char-preview').classList.replace('ui-hidden', 'ui-visible');
                 document.getElementById('ui-controls').classList.replace('ui-hidden', 'ui-visible');
                 document.getElementById('price-tag').classList.replace('ui-hidden', 'ui-visible');
-                
-                // Show 3D container
                 document.getElementById('three-container').style.opacity = '1';
-
-                // Bag Falls from Sky
+                
                 mainBag.classList.add('landed');
             }, 500);
         });
 
         function updateSlide(direction) {
+            if (isAnimating) return;
+            isAnimating = true;
+
             const nextIdx = (direction === 'next') 
                 ? (currentIdx + 1) % slides.length 
                 : (currentIdx - 1 + slides.length) % slides.length;
 
-            const currentSlide = slides[currentIdx];
             const nextSlideData = slides[nextIdx];
 
-            // 1. Determine Animation Path
-            let exitClass = '';
-            let enterClass = '';
+            // Animation Directions
+            let exitClass = (direction === 'next') ? 'slide-out-left' : 'slide-out-right';
+            let enterClass = (direction === 'next') ? 'slide-in-right' : 'slide-in-left';
 
-            if (currentIdx === 0 && nextIdx === 1) { exitClass = 'slide-out-left'; enterClass = 'slide-in-right'; }
-            else if (currentIdx === 1 && nextIdx === 2) { exitClass = 'slide-out-right'; enterClass = 'slide-in-left'; }
-            else { exitClass = 'slide-out-left'; enterClass = 'slide-in-right'; }
-
-            // Apply Exit
+            // 1. Exit Animations
             contentStack.classList.add(exitClass);
             
-            // Animate Bag & Price Tag together
-            mainBag.style.transition = 'all 0.8s var(--cinematic-ease)';
-            priceTag.style.transition = 'all 0.8s var(--cinematic-ease)'; // Ensure tag slides with bag
+            mainBag.style.transition = 'all 0.6s var(--cinematic-ease)';
+            priceTag.style.transition = 'all 0.6s var(--cinematic-ease)';
             
-            mainBag.classList.add(exitClass);
             mainBag.classList.remove('landed');
+            mainBag.classList.add(exitClass);
             
-            // Hide price tag momentarily
             priceTag.style.opacity = '0';
             priceTag.style.transform = 'scale(0.8)';
 
+            // 2. Data Swap (Midway)
             setTimeout(() => {
-                // Change Data
                 currentIdx = nextIdx;
-                heroTitle.innerText = nextSlideData.title;
+                heroTitle.innerHTML = nextSlideData.title.replace('\n', '<br>'); // Handle line breaks
                 mainBag.src = nextSlideData.bag;
                 charImg.src = nextSlideData.charImg;
                 dynamicBg.style.background = nextSlideData.background;
                 priceVal.innerText = nextSlideData.price;
-                
-                // Update 3D Object Color
                 updateThreeColor(nextSlideData.hex);
 
-                // Prepare for Entry
+                // Reset Positions instantly
                 contentStack.classList.remove(exitClass);
-                contentStack.classList.add(enterClass);
-                mainBag.style.transition = 'none';
                 mainBag.classList.remove(exitClass);
+                
+                // Prepare Entry
+                contentStack.classList.add(enterClass);
                 mainBag.classList.add(enterClass);
-
-                // Trigger Reflow
+                
+                // Force Reflow
                 void mainBag.offsetWidth;
 
-                // Entry Animation
-                contentStack.classList.remove(enterClass);
-                mainBag.style.transition = 'all 1s var(--bounce-ease)';
-                mainBag.classList.remove(enterClass);
-                mainBag.classList.add('landed');
+                // 3. Enter Animations
+                setTimeout(() => {
+                    contentStack.classList.remove(enterClass);
+                    mainBag.classList.remove(enterClass);
+                    mainBag.classList.add('landed'); // Drop effect
+                    
+                    priceTag.style.opacity = '1';
+                    priceTag.style.transform = 'scale(1)';
+                    
+                    isAnimating = false;
+                }, 50);
 
-                // Bring Price Tag Back
-                priceTag.style.opacity = '1';
-                priceTag.style.transform = 'scale(1)';
-
-            }, 800);
+            }, 600);
         }
 
-        function nextSlide() {
-            updateSlide('next');
+        function nextSlide() { updateSlide('next'); }
+        function prevSlide() { updateSlide('prev'); }
+
+        // --- SWIPE GESTURES FOR MOBILE ---
+        let touchStartX = 0;
+        let touchEndX = 0;
+        
+        document.addEventListener('touchstart', e => {
+            touchStartX = e.changedTouches[0].screenX;
+        });
+
+        document.addEventListener('touchend', e => {
+            touchEndX = e.changedTouches[0].screenX;
+            handleSwipe();
+        });
+
+        function handleSwipe() {
+            if (touchEndX < touchStartX - 50) nextSlide(); // Swipe Left
+            if (touchEndX > touchStartX + 50) prevSlide(); // Swipe Right
         }
 
-        function prevSlide() {
-            updateSlide('prev');
-        }
     </script>
 </body>
 </html>
