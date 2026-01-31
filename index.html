@@ -2,282 +2,132 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PIXI | Carry the Story</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
-    
     <style>
         :root {
             --cinematic-ease: cubic-bezier(0.4, 0, 0.2, 1);
             --bounce-ease: cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            /* Fluid Typography Variables */
-            --fs-hero: clamp(3rem, 8vw, 7rem);
-            --fs-desc: clamp(0.9rem, 1.5vw, 1.25rem);
         }
 
         body {
-            margin: 0;
-            padding: 0;
-            overflow-x: hidden; /* Critical for slide animations */
+            margin: 0; padding: 0;
+            overflow-x: hidden; /* Allow vertical scroll on mobile if content overflows */
             font-family: 'Inter', sans-serif;
             background-color: #fff;
-            height: 100vh; /* Lock height for app-like feel */
-            width: 100vw;
         }
 
         h1, .hero-font { font-family: 'Playfair Display', serif; }
 
-        /* --- RESPONSIVE BACKGROUND --- */
+        /* Split Background - Responsive */
         .bg-container {
             position: fixed;
             inset: 0;
             display: flex;
-            flex-direction: column; /* Default: Mobile Stack */
+            flex-direction: column; /* Mobile first: Vertical split */
             z-index: -1;
         }
 
+        @media (min-width: 1024px) {
+            .bg-container { flex-direction: row; } /* Tablet/Desktop: Horizontal split */
+        }
+
         .bg-left {
-            width: 100%;
-            height: 55%;
+            height: 40%; width: 100%; /* Mobile */
             background: #ffffff;
             background-image: radial-gradient(#efefef 1px, transparent 1px);
             background-size: 30px 30px;
-            transition: height 0.5s ease;
         }
 
         .bg-right {
-            width: 100%;
-            height: 45%;
-            transition: background 1s var(--cinematic-ease), height 0.5s ease;
-            position: relative;
+            height: 60%; width: 100%; /* Mobile */
+            transition: background 1s var(--cinematic-ease);
         }
 
-        /* Desktop: Switch to Side-by-Side */
         @media (min-width: 1024px) {
-            .bg-container { flex-direction: row; }
             .bg-left { width: 45%; height: 100%; }
             .bg-right { width: 55%; height: 100%; }
         }
 
-        /* --- PRODUCT STAGE (THE BAG) --- */
+        /* Product Stage - Responsive Sizing */
         .product-stage {
             position: absolute;
-            z-index: 30;
-            pointer-events: none;
-            /* Default Mobile Positioning */
-            top: 55%; 
-            left: 50%;
+            top: 55%; left: 50%;
             transform: translate(-50%, -50%);
-            width: 100%;
-            max-width: 320px;
-            height: 320px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            transition: all 0.5s ease;
+            width: 80vw; height: 80vw; /* Responsive square */
+            max-width: 500px; max-height: 500px;
+            pointer-events: none;
+            display: flex; justify-content: center; align-items: center;
+            z-index: 30;
+        }
+
+        @media (min-width: 1024px) {
+            .product-stage { left: 45%; top: 50%; width: 600px; height: 600px; }
         }
 
         .bag-image {
-            max-width: 100%;
-            max-height: 100%;
-            filter: drop-shadow(0 20px 40px rgba(0,0,0,0.4));
-            transform: translateY(-120vh); /* Start from sky */
+            max-width: 100%; max-height: 100%;
+            filter: drop-shadow(0 30px 60px rgba(0,0,0,0.4));
+            transform: translateY(-120vh);
             transition: transform 1.5s var(--bounce-ease), opacity 0.5s ease;
         }
 
         .bag-image.landed { transform: translateY(0); }
 
-        /* Tablet Adjustments */
-        @media (min-width: 768px) and (max-width: 1023px) {
-            .product-stage { max-width: 450px; top: 50%; }
-        }
-
-        /* Desktop Adjustments */
-        @media (min-width: 1024px) {
-            .product-stage {
-                top: 50%;
-                left: 45%; /* Sits on the split line */
-                width: 600px;
-                height: 600px;
-                max-width: none;
-            }
-        }
-
-        /* --- PRICE TAG --- */
+        /* Price Tag - Smaller on Mobile */
         .price-floater {
             position: absolute;
-            /* Mobile Position */
-            top: -10px;
-            right: 10px;
-            width: 70px;
-            height: 70px;
+            top: 10%; right: -5%;
+            width: 70px; height: 70px;
             border-radius: 50%;
             background: rgba(255, 255, 255, 0.15);
             backdrop-filter: blur(12px);
             border: 1px solid rgba(255, 255, 255, 0.4);
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            color: white;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
-            z-index: 35;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            color: white; z-index: 35;
             animation: floatBob 4s ease-in-out infinite;
         }
 
-        /* Desktop Price Tag */
-        @media (min-width: 1024px) {
-            .price-floater {
-                width: 100px;
-                height: 100px;
-                top: 15%;
-                right: 0%;
-            }
-        }
-
-        .amount { font-size: 1.2rem; font-weight: 800; font-family: 'Playfair Display', serif; }
-        .usd { font-size: 0.5rem; letter-spacing: 0.2em; font-weight: 600; }
-        @media (min-width: 1024px) { .amount { font-size: 1.5rem; } .usd { font-size: 0.6rem; } }
-
-        @keyframes floatBob {
-            0%, 100% { transform: translateY(0px); }
-            50% { transform: translateY(-10px); }
-        }
-
-        /* --- THREE.JS CONTAINER --- */
-        #three-container {
-            position: fixed;
-            /* Mobile: Bottom Left, small */
-            bottom: 20px;
-            left: 20px;
-            width: 100px;
-            height: 100px;
-            z-index: 25;
-            pointer-events: none;
-            opacity: 0;
-            transition: opacity 1s ease;
-        }
-        @media (min-width: 1024px) {
-            #three-container { width: 200px; height: 200px; bottom: 5%; left: 5%; }
-        }
-
-        /* --- UI & TEXT STACK --- */
-        .content-container {
-            position: fixed;
-            /* Mobile: Top Section */
-            top: 15%; 
-            left: 0;
-            width: 100%;
-            padding: 0 2rem;
-            z-index: 20;
-            text-align: center;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-
-        /* Desktop: Left Aligned */
-        @media (min-width: 1024px) {
-            .content-container {
-                top: 50%;
-                left: 8%; /* Offset */
-                transform: translateY(-50%);
-                width: 35%;
-                text-align: left;
-                align-items: flex-start;
-                padding: 0;
-            }
-        }
-
-        #hero-title { font-size: var(--fs-hero); line-height: 0.9; margin-bottom: 1rem; color: #000; }
-        #hero-desc { font-size: var(--fs-desc); color: #666; margin-bottom: 2rem; max-width: 400px; }
-
-        /* --- NAVIGATION --- */
-        .nav-link { 
-            display: none; /* Hidden on mobile */
-        }
         @media (min-width: 768px) {
-            .nav-link { display: inline-block; color: #000; margin-left: 2rem; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.1em; font-weight: 600; }
-        }
-
-        /* --- BUTTONS --- */
-        .cinematic-btn {
-            background: transparent;
-            color: #000;
-            border: 1px solid #000;
-            padding: 1rem 2rem;
-            text-transform: uppercase;
-            letter-spacing: 0.2em;
-            font-size: 0.7rem;
-            font-weight: 700;
-            transition: all 0.3s ease;
-            cursor: pointer;
+            .price-floater { width: 100px; height: 100px; top: 20%; right: 0; }
         }
         
-        @media (min-width: 1024px) {
-            .cinematic-btn {
-                writing-mode: vertical-rl; /* Sideways on Desktop */
-                text-orientation: mixed;
-                padding: 2.5rem 1rem;
-                border: none;
-                border-left: 2px solid rgba(0,0,0,0.1);
-            }
+        .currency { font-size: 0.7rem; }
+        .amount { font-size: 1.1rem; font-weight: 800; font-family: 'Playfair Display', serif; }
+        @media (min-width: 768px) { .amount { font-size: 1.5rem; } }
+
+        /* ThreeJS - Scaled for Mobile */
+        #three-container {
+            position: fixed;
+            bottom: 2%; left: 2%;
+            width: 120px; height: 120px;
+            z-index: 25; pointer-events: none;
+            opacity: 0; transition: opacity 1s ease;
         }
+        @media (min-width: 768px) { #three-container { width: 200px; height: 200px; } }
 
-        .cinematic-btn:hover { background: #000; color: #fff; }
+        /* Content Adjustments */
+        .content-wrap h1 { font-size: 3.5rem; }
+        @media (min-width: 768px) { .content-wrap h1 { font-size: 5rem; } }
+        @media (min-width: 1024px) { .content-wrap h1 { font-size: 8rem; } }
 
-        /* --- CHARACTER PREVIEW (Side Box) --- */
+        /* Character Box - Hidden on very small screens, visible on Tablets */
         .char-box {
             position: absolute;
-            right: 5%;
-            top: 50%;
-            transform: translateY(-50%);
-            width: 140px;
-            height: 180px;
+            right: 5%; top: 20%;
+            width: 80px; height: 110px;
             background: rgba(255, 255, 255, 0.1);
             backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
             border-radius: 12px;
-            overflow: hidden;
-            z-index: 40;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
-            display: none; /* Hidden on Mobile */
+            overflow: hidden; z-index: 40;
+            display: none; /* Hide on mobile */
         }
-        @media (min-width: 1024px) { .char-box { display: block; } }
+        @media (min-width: 768px) { .char-box { display: block; top: 50%; transform: translateY(-50%); width: 140px; height: 180px; } }
 
-        .char-box img { width: 100%; height: 100%; object-fit: cover; filter: brightness(0.8) contrast(1.2); }
-
-        /* --- CONTROLS --- */
-        .controls-wrapper {
-            position: fixed;
-            bottom: 30px;
-            right: 30px;
-            display: flex;
-            gap: 15px;
-            z-index: 50;
-        }
-        /* Adjust for mobile to not block content */
-        @media (max-width: 768px) {
-            .controls-wrapper { bottom: 20px; right: 20px; }
-        }
-
-        .control-btn {
-            width: 50px;
-            height: 50px;
-            border-radius: 50%;
-            background: rgba(255, 255, 255, 0.9);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-            transition: transform 0.2s;
-        }
-        .control-btn:active { transform: scale(0.9); }
-
-        /* --- ANIMATION CLASSES --- */
+        /* Slide Classes */
         .slide-out-left { transform: translateX(-150vw) rotate(-10deg); opacity: 0; }
         .slide-out-right { transform: translateX(150vw) rotate(10deg); opacity: 0; }
         .slide-in-right { transform: translateX(100vw); opacity: 0; }
@@ -285,6 +135,11 @@
 
         .ui-hidden { opacity: 0; transform: translateY(20px); }
         .ui-visible { opacity: 1; transform: translateY(0); transition: all 1s var(--cinematic-ease); }
+
+        @keyframes floatBob {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-15px); }
+        }
     </style>
 </head>
 <body>
@@ -296,88 +151,55 @@
 
     <div id="three-container"></div>
 
-    <header class="fixed top-0 left-0 w-full p-6 lg:p-10 flex justify-between items-center z-50">
-        <div id="brand-logo" class="text-2xl lg:text-3xl font-black tracking-tighter hero-font text-black ui-hidden">PIXI</div>
-        <nav id="top-nav" class="ui-hidden">
-            <a href="#" class="nav-link">Shop</a>
-            <a href="#" class="nav-link">Collections</a>
-            <a href="#" class="nav-link">About</a>
-            <div class="lg:hidden text-black font-bold text-sm tracking-widest">MENU</div>
+    <header class="fixed top-0 left-0 w-full p-6 md:p-10 flex justify-between items-center z-50">
+        <div id="brand-logo" class="text-2xl md:text-3xl font-black tracking-tighter hero-font text-black ui-hidden">PIXI</div>
+        <nav id="top-nav" class="hidden md:flex space-x-12 pr-10 ui-hidden">
+            <a href="#" class="nav-link text-xs font-semibold uppercase tracking-widest">Shop</a>
+            <a href="#" class="nav-link text-xs font-semibold uppercase tracking-widest">About</a>
         </nav>
     </header>
 
-    <div id="content-stack" class="content-container ui-hidden">
-        <h1 id="hero-title" class="hero-font font-black text-black">Carry the<br>Story</h1>
-        <p id="hero-desc" class="font-light">
-            Movie-inspired bags designed for heroes, legends, and everyday storytellers.
-        </p>
-        <div>
-            <button class="cinematic-btn">
-                Explore Collection
+    <div class="fixed left-6 md:left-20 top-[15%] md:top-1/2 md:-translate-y-1/2 max-w-xs md:max-w-lg z-20">
+        <div id="content-stack" class="content-wrap ui-hidden">
+            <h1 id="hero-title" class="mb-4 leading-none text-black font-black">Carry the Story</h1>
+            <p id="hero-desc" class="text-gray-500 text-sm md:text-xl mb-6 md:mb-10 leading-relaxed font-light">
+                Movie-inspired bags designed for heroes and legends.
+            </p>
+            <button class="border-l-2 border-black px-4 py-2 uppercase text-[10px] font-bold tracking-widest text-black hover:bg-black hover:text-white transition-all">
+                Explore
             </button>
         </div>
     </div>
 
     <div class="product-stage">
-        <img id="main-bag" src="https://placehold.co/600x600/png?text=Spider+Bag" alt="Hero Bag" class="bag-image">
-        
+        <img id="main-bag" src="bag1.png" alt="Hero Bag" class="bag-image">
         <div id="price-tag" class="price-floater ui-hidden">
             <span class="currency">$</span>
             <span id="price-val" class="amount">13.99</span>
-            <span class="usd">USD</span>
         </div>
     </div>
 
     <div id="char-preview" class="char-box ui-hidden">
-        <img id="char-img" src="https://placehold.co/300x400/png?text=Hero+Shot" alt="Character">
+        <img id="char-img" src="img1.png" alt="Character" class="w-full h-full object-cover">
     </div>
 
-    <div class="controls-wrapper ui-hidden" id="ui-controls">
-        <div onclick="prevSlide()" class="control-btn text-black hover:bg-black hover:text-white">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+    <div class="fixed bottom-8 right-6 md:bottom-12 md:right-12 flex space-x-4 md:space-x-6 z-50 ui-hidden" id="ui-controls">
+        <div onclick="prevSlide()" class="w-12 h-12 md:w-16 md:h-16 rounded-full bg-white/90 flex items-center justify-center cursor-pointer shadow-lg hover:scale-110 transition-transform">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
         </div>
-        <div onclick="nextSlide()" class="control-btn text-black hover:bg-black hover:text-white">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+        <div onclick="nextSlide()" class="w-12 h-12 md:w-16 md:h-16 rounded-full bg-white/90 flex items-center justify-center cursor-pointer shadow-lg hover:scale-110 transition-transform">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
         </div>
     </div>
 
     <script>
-        // --- CONFIG & DATA ---
-        // Note: Using Placeholders for the demo. Replace URLs with your 'bag1.png', 'img1.png', etc.
         const slides = [
-            {
-                id: 1,
-                bag: "https://placehold.co/600x600/8B0000/FFFFFF/png?text=Spider+Bag",
-                charImg: "https://placehold.co/300x400/8B0000/FFFFFF/png?text=Spidey",
-                title: "Carry the\nStory",
-                background: "#8B0000",
-                price: "13.99",
-                hex: 0x8B0000
-            },
-            {
-                id: 2,
-                bag: "https://placehold.co/600x600/001f3f/FFFFFF/png?text=Cap+Bag",
-                charImg: "https://placehold.co/300x400/001f3f/FFFFFF/png?text=Captain",
-                title: "First\nAvenger",
-                background: "#001f3f",
-                price: "14.99",
-                hex: 0x001f3f
-            },
-            {
-                id: 3,
-                bag: "https://placehold.co/600x600/004d00/FFFFFF/png?text=Loki+Bag",
-                charImg: "https://placehold.co/300x400/004d00/FFFFFF/png?text=Loki",
-                title: "God of\nThunder",
-                background: "#004d00",
-                price: "15.00",
-                hex: 0x004d00
-            }
+            { id: 1, bag: "bag1.png", charImg: "img1.png", title: "Carry the Story", background: "#8B0000", price: "13.99", hex: 0x8B0000 },
+            { id: 2, bag: "bag2.png", charImg: "img2.png", title: "First Avenger", background: "#001f3f", price: "14.99", hex: 0x001f3f },
+            { id: 3, bag: "bag3.png", charImg: "img3.png", title: "God of Thunder", background: "#004d00", price: "15.00", hex: 0x004d00 }
         ];
 
         let currentIdx = 0;
-        let isAnimating = false;
-
-        // Elements
         const mainBag = document.getElementById('main-bag');
         const dynamicBg = document.getElementById('dynamic-bg');
         const contentStack = document.getElementById('content-stack');
@@ -386,182 +208,85 @@
         const priceVal = document.getElementById('price-val');
         const priceTag = document.getElementById('price-tag');
 
-        // --- THREE.JS SETUP ---
+        // ThreeJS setup remains same but size is handled via CSS
         let scene, camera, renderer, artifact, outerRing;
 
         function initThree() {
             const container = document.getElementById('three-container');
-            const w = container.clientWidth;
-            const h = container.clientHeight;
-
             scene = new THREE.Scene();
-            camera = new THREE.PerspectiveCamera(75, w / h, 0.1, 1000);
-            
+            camera = new THREE.PerspectiveCamera(75, 1, 0.1, 1000);
             renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
-            renderer.setSize(w, h);
+            renderer.setSize(200, 200);
             renderer.setPixelRatio(window.devicePixelRatio);
             container.appendChild(renderer.domElement);
 
-            // Object: Icosahedron
             const geometry = new THREE.IcosahedronGeometry(1.5, 0);
-            const material = new THREE.MeshPhongMaterial({ 
-                color: 0x8B0000, 
-                shininess: 100,
-                wireframe: true,
-                emissive: 0x440000,
-                emissiveIntensity: 0.5
-            });
+            const material = new THREE.MeshPhongMaterial({ color: 0x8B0000, wireframe: true });
             artifact = new THREE.Mesh(geometry, material);
             scene.add(artifact);
 
-            // Object: Ring
-            const ringGeo = new THREE.TorusGeometry(2.2, 0.05, 16, 100);
-            const ringMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.3 });
-            outerRing = new THREE.Mesh(ringGeo, ringMat);
-            scene.add(outerRing);
-
-            // Lights
             const light = new THREE.PointLight(0xffffff, 2, 100);
             light.position.set(10, 10, 10);
             scene.add(light);
             scene.add(new THREE.AmbientLight(0x404040));
-
             camera.position.z = 5;
             animateThree();
         }
 
         function animateThree() {
             requestAnimationFrame(animateThree);
-            if(artifact) {
-                artifact.rotation.x += 0.01;
-                artifact.rotation.y += 0.015;
-            }
-            if(outerRing) {
-                outerRing.rotation.x -= 0.005;
-                outerRing.rotation.y += 0.005;
-            }
+            if(artifact) { artifact.rotation.x += 0.01; artifact.rotation.y += 0.015; }
             renderer.render(scene, camera);
         }
 
         function updateThreeColor(hexColor) {
-            if(artifact) {
-                artifact.material.color.setHex(hexColor);
-                artifact.material.emissive.setHex(hexColor);
-            }
+            if(artifact) artifact.material.color.setHex(hexColor);
         }
-
-        // Handle Resize for ThreeJS
-        window.addEventListener('resize', () => {
-            const container = document.getElementById('three-container');
-            const w = container.clientWidth;
-            const h = container.clientHeight;
-            renderer.setSize(w, h);
-            camera.aspect = w / h;
-            camera.updateProjectionMatrix();
-        });
 
         initThree();
 
-        // --- DOM ANIMATIONS & SLIDER ---
-
         window.addEventListener('DOMContentLoaded', () => {
             setTimeout(() => {
-                // Reveal UI
-                document.getElementById('brand-logo').classList.replace('ui-hidden', 'ui-visible');
-                document.getElementById('top-nav').classList.replace('ui-hidden', 'ui-visible');
-                document.getElementById('content-stack').classList.replace('ui-hidden', 'ui-visible');
-                document.getElementById('char-preview').classList.replace('ui-hidden', 'ui-visible');
-                document.getElementById('ui-controls').classList.replace('ui-hidden', 'ui-visible');
-                document.getElementById('price-tag').classList.replace('ui-hidden', 'ui-visible');
+                document.querySelectorAll('.ui-hidden').forEach(el => el.classList.replace('ui-hidden', 'ui-visible'));
                 document.getElementById('three-container').style.opacity = '1';
-                
                 mainBag.classList.add('landed');
             }, 500);
         });
 
         function updateSlide(direction) {
-            if (isAnimating) return;
-            isAnimating = true;
-
-            const nextIdx = (direction === 'next') 
-                ? (currentIdx + 1) % slides.length 
-                : (currentIdx - 1 + slides.length) % slides.length;
-
+            const nextIdx = (direction === 'next') ? (currentIdx + 1) % slides.length : (currentIdx - 1 + slides.length) % slides.length;
             const nextSlideData = slides[nextIdx];
 
-            // Animation Directions
-            let exitClass = (direction === 'next') ? 'slide-out-left' : 'slide-out-right';
-            let enterClass = (direction === 'next') ? 'slide-in-right' : 'slide-in-left';
-
-            // 1. Exit Animations
-            contentStack.classList.add(exitClass);
-            
-            mainBag.style.transition = 'all 0.6s var(--cinematic-ease)';
-            priceTag.style.transition = 'all 0.6s var(--cinematic-ease)';
-            
+            contentStack.classList.add('slide-out-left');
+            mainBag.classList.add('slide-out-left');
             mainBag.classList.remove('landed');
-            mainBag.classList.add(exitClass);
-            
             priceTag.style.opacity = '0';
-            priceTag.style.transform = 'scale(0.8)';
 
-            // 2. Data Swap (Midway)
             setTimeout(() => {
                 currentIdx = nextIdx;
-                heroTitle.innerHTML = nextSlideData.title.replace('\n', '<br>'); // Handle line breaks
+                heroTitle.innerText = nextSlideData.title;
                 mainBag.src = nextSlideData.bag;
                 charImg.src = nextSlideData.charImg;
                 dynamicBg.style.background = nextSlideData.background;
                 priceVal.innerText = nextSlideData.price;
                 updateThreeColor(nextSlideData.hex);
 
-                // Reset Positions instantly
-                contentStack.classList.remove(exitClass);
-                mainBag.classList.remove(exitClass);
-                
-                // Prepare Entry
-                contentStack.classList.add(enterClass);
-                mainBag.classList.add(enterClass);
-                
-                // Force Reflow
+                contentStack.classList.remove('slide-out-left');
+                mainBag.style.transition = 'none';
+                mainBag.classList.remove('slide-out-left');
+                mainBag.classList.add('slide-in-right');
+
                 void mainBag.offsetWidth;
 
-                // 3. Enter Animations
-                setTimeout(() => {
-                    contentStack.classList.remove(enterClass);
-                    mainBag.classList.remove(enterClass);
-                    mainBag.classList.add('landed'); // Drop effect
-                    
-                    priceTag.style.opacity = '1';
-                    priceTag.style.transform = 'scale(1)';
-                    
-                    isAnimating = false;
-                }, 50);
-
-            }, 600);
+                mainBag.style.transition = 'all 1s var(--bounce-ease)';
+                mainBag.classList.remove('slide-in-right');
+                mainBag.classList.add('landed');
+                priceTag.style.opacity = '1';
+            }, 800);
         }
 
         function nextSlide() { updateSlide('next'); }
         function prevSlide() { updateSlide('prev'); }
-
-        // --- SWIPE GESTURES FOR MOBILE ---
-        let touchStartX = 0;
-        let touchEndX = 0;
-        
-        document.addEventListener('touchstart', e => {
-            touchStartX = e.changedTouches[0].screenX;
-        });
-
-        document.addEventListener('touchend', e => {
-            touchEndX = e.changedTouches[0].screenX;
-            handleSwipe();
-        });
-
-        function handleSwipe() {
-            if (touchEndX < touchStartX - 50) nextSlide(); // Swipe Left
-            if (touchEndX > touchStartX + 50) prevSlide(); // Swipe Right
-        }
-
     </script>
 </body>
 </html>
