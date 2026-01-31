@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PIXI | Carry the Story</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --cinematic-ease: cubic-bezier(0.4, 0, 0.2, 1);
+            --bounce-ease: cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            font-family: 'Inter', sans-serif;
+            background-color: #fff;
+        }
+
+        h1, .hero-font {
+            font-family: 'Playfair Display', serif;
+        }
+
+        /* Split Background */
+        .bg-container {
+            position: fixed;
+            inset: 0;
+            display: flex;
+            z-index: -1;
+        }
+
+        .bg-left {
+            width: 45%;
+            background: #ffffff;
+            background-image: radial-gradient(#efefef 1px, transparent 1px);
+            background-size: 30px 30px;
+        }
+
+        .bg-right {
+            width: 55%;
+            transition: background 1s var(--cinematic-ease);
+        }
+
+        /* Hero Bag Falling and Sizing */
+        .product-stage {
+            position: absolute;
+            top: 50%;
+            left: 45%; 
+            transform: translate(-50%, -50%);
+            width: 600px; 
+            height: 600px;
+            pointer-events: none;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 30;
+        }
+
+        .bag-image {
+            max-width: 100%;
+            max-height: 100%;
+            filter: drop-shadow(0 30px 60px rgba(0,0,0,0.4));
+            transform: translateY(-120vh); /* Initial state: Sky */
+            transition: transform 1.5s var(--bounce-ease), opacity 0.5s ease;
+        }
+
+        .bag-image.landed {
+            transform: translateY(0);
+        }
+
+        /* --- NEW: Cinematic Price Tag --- */
+        .price-floater {
+            position: absolute;
+            top: 20%; 
+            right: 0%; 
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.2);
+            z-index: 35;
+            animation: floatBob 4s ease-in-out infinite;
+            transition: all 0.5s var(--cinematic-ease);
+        }
+
+        .price-floater span {
+            display: block;
+        }
+        
+        .currency { font-size: 0.8rem; opacity: 0.8; margin-bottom: -2px; }
+        .amount { font-size: 1.5rem; font-weight: 800; font-family: 'Playfair Display', serif; }
+        .usd { font-size: 0.6rem; letter-spacing: 0.2em; font-weight: 600; margin-top: 2px;}
+
+        @keyframes floatBob {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-15px); }
+        }
+
+        /* --- NEW: ThreeJS Container --- */
+        #three-container {
+            position: fixed;
+            bottom: 5%;
+            left: 5%; /* Bottom left corner for balance */
+            width: 200px;
+            height: 200px;
+            z-index: 25;
+            pointer-events: none;
+            opacity: 0; /* Hidden initially */
+            transition: opacity 1s ease;
+        }
+
+        /* Slide Transitions */
+        .slide-out-left { transform: translateX(-150vw) rotate(-10deg); opacity: 0; }
+        .slide-out-right { transform: translateX(150vw) rotate(10deg); opacity: 0; }
+        .slide-in-right { transform: translateX(100vw); opacity: 0; }
+        .slide-in-left { transform: translateX(-100vw); opacity: 0; }
+
+        /* Navigation Styling */
+        .nav-link {
+            color: white;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            font-size: 0.7rem;
+            font-weight: 600;
+            transition: opacity 0.3s ease;
+        }
+        .nav-link:hover { opacity: 0.7; }
+
+        /* Content Stack */
+        .content-wrap {
+            transition: transform 1s var(--cinematic-ease), opacity 0.8s ease;
+        }
+
+        /* Character Preview Box */
+        .char-box {
+            position: absolute;
+            right: 5%;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 140px;
+            height: 180px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            overflow: hidden;
+            z-index: 40;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+            transition: all 0.8s var(--cinematic-ease);
+        }
+
+        .char-box img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            filter: brightness(0.8) contrast(1.2);
+            transition: transform 1s ease;
+        }
+
+        .char-box:hover img {
+            transform: scale(1.1);
+        }
+
+        /* Buttons & Controls */
+        .cinematic-btn {
+            writing-mode: vertical-rl;
+            text-orientation: mixed;
+            border-left: 2px solid rgba(0,0,0,0.05);
+            padding: 2.5rem 1rem;
+            letter-spacing: 0.3em;
+            transition: all 0.4s ease;
+            background: transparent;
+        }
+        .cinematic-btn:hover {
+            background: #000;
+            color: #fff;
+        }
+
+        .control-btn {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.9);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+        }
+        .control-btn:hover {
+            background: white;
+            transform: scale(1.1) translateY(-5px);
+            box-shadow: 0 15px 30px rgba(0,0,0,0.15);
+        }
+
+        /* Initial UI Slide In */
+        .ui-hidden {
+            opacity: 0;
+            transform: translateY(30px);
+        }
+        .ui-visible {
+            opacity: 1;
+            transform: translateY(0);
+            transition: all 1s var(--cinematic-ease);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="bg-container">
+        <div class="bg-left"></div>
+        <div id="dynamic-bg" class="bg-right" style="background: #8B0000;"></div>
+    </div>
+
+    <div id="three-container"></div>
+
+    <header class="fixed top-0 left-0 w-full p-10 flex justify-between items-center z-50">
+        <div id="brand-logo" class="text-3xl font-black tracking-tighter hero-font text-black ui-hidden">PIXI</div>
+        <nav id="top-nav" class="flex space-x-12 pr-10 ui-hidden">
+            <a href="#" class="nav-link">Shop</a>
+            <a href="#" class="nav-link">Collections</a>
+            <a href="#" class="nav-link">About</a>
+        </nav>
+    </header>
+
+    <div class="fixed left-20 top-1/2 -translate-y-1/2 max-w-lg z-20">
+        <div id="content-stack" class="content-wrap ui-hidden">
+            <h1 id="hero-title" class="text-8xl mb-6 leading-none text-black font-black">Carry the Story</h1>
+            <p id="hero-desc" class="text-gray-500 text-xl mb-10 leading-relaxed font-light pr-12">
+                Movie-inspired bags designed for heroes, legends, and everyday storytellers.
+            </p>
+            <div class="flex items-start">
+                <button class="cinematic-btn uppercase text-[10px] font-bold tracking-widest text-black">
+                    Explore Collection
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="product-stage">
+        <img id="main-bag" src="bag1.png" alt="Hero Bag" class="bag-image">
+        
+        <div id="price-tag" class="price-floater ui-hidden">
+            <span class="currency">$</span>
+            <span id="price-val" class="amount">13.99</span>
+            <span class="usd">USD</span>
+        </div>
+    </div>
+
+    <div id="char-preview" class="char-box ui-hidden">
+        <img id="char-img" src="img1.png" alt="Character">
+    </div>
+
+    <div class="fixed bottom-12 right-12 flex space-x-6 z-50 ui-hidden" id="ui-controls">
+        <div onclick="prevSlide()" class="control-btn text-black">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+        </div>
+        <div onclick="nextSlide()" class="control-btn text-black">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+        </div>
+    </div>
+
+    <script>
+        // --- DATA SETUP ---
+        const slides = [
+            {
+                id: 1,
+                bag: "bag1.png",
+                charImg: "img1.png",
+                title: "Carry the Story",
+                background: "#8B0000", // Spider-Man Red
+                price: "13.99",
+                hex: 0x8B0000
+            },
+            {
+                id: 2,
+                bag: "bag2.png",
+                charImg: "img2.png",
+                title: "First Avenger",
+                background: "#001f3f", // Cap Blue
+                price: "14.99",
+                hex: 0x001f3f
+            },
+            {
+                id: 3,
+                bag: "bag3.png",
+                charImg: "img3.png",
+                title: "God of Thunder",
+                background: "#004d00", // Loki/Thor Green
+                price: "15.00",
+                hex: 0x004d00
+            }
+        ];
+
+        let currentIdx = 0;
+        const mainBag = document.getElementById('main-bag');
+        const dynamicBg = document.getElementById('dynamic-bg');
+        const contentStack = document.getElementById('content-stack');
+        const heroTitle = document.getElementById('hero-title');
+        const charImg = document.getElementById('char-img');
+        const priceVal = document.getElementById('price-val');
+        const priceTag = document.getElementById('price-tag');
+
+        // --- THREE.JS SETUP (Superhero Artifact) ---
+        let scene, camera, renderer, artifact, outerRing;
+
+        function initThree() {
+            const container = document.getElementById('three-container');
+            
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(75, 1, 0.1, 1000);
+            renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+            renderer.setSize(200, 200);
+            container.appendChild(renderer.domElement);
+
+            // Create "Artifact" Core (Icosahedron)
+            const geometry = new THREE.IcosahedronGeometry(1.5, 0);
+            const material = new THREE.MeshPhongMaterial({ 
+                color: 0x8B0000, 
+                shininess: 100,
+                wireframe: true,
+                emissive: 0x440000,
+                emissiveIntensity: 0.5
+            });
+            artifact = new THREE.Mesh(geometry, material);
+            scene.add(artifact);
+
+            // Create Outer Ring (Torus)
+            const ringGeo = new THREE.TorusGeometry(2.2, 0.05, 16, 100);
+            const ringMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.3 });
+            outerRing = new THREE.Mesh(ringGeo, ringMat);
+            scene.add(outerRing);
+
+            // Lighting
+            const light = new THREE.PointLight(0xffffff, 2, 100);
+            light.position.set(10, 10, 10);
+            scene.add(light);
+            const ambientLight = new THREE.AmbientLight(0x404040);
+            scene.add(ambientLight);
+
+            camera.position.z = 5;
+
+            animateThree();
+        }
+
+        function animateThree() {
+            requestAnimationFrame(animateThree);
+            
+            // Gentle rotation
+            if(artifact) {
+                artifact.rotation.x += 0.01;
+                artifact.rotation.y += 0.015;
+            }
+            if(outerRing) {
+                outerRing.rotation.x -= 0.005;
+                outerRing.rotation.y += 0.005;
+            }
+
+            renderer.render(scene, camera);
+        }
+
+        function updateThreeColor(hexColor) {
+            if(artifact) {
+                artifact.material.color.setHex(hexColor);
+                artifact.material.emissive.setHex(hexColor);
+            }
+        }
+
+        initThree(); // Start 3D
+
+        // --- DOM ANIMATIONS ---
+
+        // Initial Load Animations
+        window.addEventListener('DOMContentLoaded', () => {
+            setTimeout(() => {
+                // UI Slide Ins
+                document.getElementById('brand-logo').classList.replace('ui-hidden', 'ui-visible');
+                document.getElementById('top-nav').classList.replace('ui-hidden', 'ui-visible');
+                document.getElementById('content-stack').classList.replace('ui-hidden', 'ui-visible');
+                document.getElementById('char-preview').classList.replace('ui-hidden', 'ui-visible');
+                document.getElementById('ui-controls').classList.replace('ui-hidden', 'ui-visible');
+                document.getElementById('price-tag').classList.replace('ui-hidden', 'ui-visible');
+                
+                // Show 3D container
+                document.getElementById('three-container').style.opacity = '1';
+
+                // Bag Falls from Sky
+                mainBag.classList.add('landed');
+            }, 500);
+        });
+
+        function updateSlide(direction) {
+            const nextIdx = (direction === 'next') 
+                ? (currentIdx + 1) % slides.length 
+                : (currentIdx - 1 + slides.length) % slides.length;
+
+            const currentSlide = slides[currentIdx];
+            const nextSlideData = slides[nextIdx];
+
+            // 1. Determine Animation Path
+            let exitClass = '';
+            let enterClass = '';
+
+            if (currentIdx === 0 && nextIdx === 1) { exitClass = 'slide-out-left'; enterClass = 'slide-in-right'; }
+            else if (currentIdx === 1 && nextIdx === 2) { exitClass = 'slide-out-right'; enterClass = 'slide-in-left'; }
+            else { exitClass = 'slide-out-left'; enterClass = 'slide-in-right'; }
+
+            // Apply Exit
+            contentStack.classList.add(exitClass);
+            
+            // Animate Bag & Price Tag together
+            mainBag.style.transition = 'all 0.8s var(--cinematic-ease)';
+            priceTag.style.transition = 'all 0.8s var(--cinematic-ease)'; // Ensure tag slides with bag
+            
+            mainBag.classList.add(exitClass);
+            mainBag.classList.remove('landed');
+            
+            // Hide price tag momentarily
+            priceTag.style.opacity = '0';
+            priceTag.style.transform = 'scale(0.8)';
+
+            setTimeout(() => {
+                // Change Data
+                currentIdx = nextIdx;
+                heroTitle.innerText = nextSlideData.title;
+                mainBag.src = nextSlideData.bag;
+                charImg.src = nextSlideData.charImg;
+                dynamicBg.style.background = nextSlideData.background;
+                priceVal.innerText = nextSlideData.price;
+                
+                // Update 3D Object Color
+                updateThreeColor(nextSlideData.hex);
+
+                // Prepare for Entry
+                contentStack.classList.remove(exitClass);
+                contentStack.classList.add(enterClass);
+                mainBag.style.transition = 'none';
+                mainBag.classList.remove(exitClass);
+                mainBag.classList.add(enterClass);
+
+                // Trigger Reflow
+                void mainBag.offsetWidth;
+
+                // Entry Animation
+                contentStack.classList.remove(enterClass);
+                mainBag.style.transition = 'all 1s var(--bounce-ease)';
+                mainBag.classList.remove(enterClass);
+                mainBag.classList.add('landed');
+
+                // Bring Price Tag Back
+                priceTag.style.opacity = '1';
+                priceTag.style.transform = 'scale(1)';
+
+            }, 800);
+        }
+
+        function nextSlide() {
+            updateSlide('next');
+        }
+
+        function prevSlide() {
+            updateSlide('prev');
+        }
+    </script>
+</body>
+</html>
