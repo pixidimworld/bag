@@ -2,144 +2,311 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>PIXI | Carry the Story</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+    
     <style>
         :root {
             --cinematic-ease: cubic-bezier(0.4, 0, 0.2, 1);
             --bounce-ease: cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            /* Mobile-First Font Sizes */
+            --fs-hero: clamp(3.5rem, 12vw, 5rem);
+            --fs-desc: clamp(0.9rem, 4vw, 1rem);
         }
 
+        /* --- GLOBAL RESET --- */
         body {
-            margin: 0; padding: 0;
-            overflow-x: hidden; /* Allow vertical scroll on mobile if content overflows */
+            margin: 0;
+            padding: 0;
+            overflow: hidden; /* Lock scroll strictly */
             font-family: 'Inter', sans-serif;
             background-color: #fff;
+            width: 100vw;
+            height: 100dvh; /* Dynamic Height for Mobile Browsers */
+            position: relative;
         }
 
         h1, .hero-font { font-family: 'Playfair Display', serif; }
 
-        /* Split Background - Responsive */
+        /* --- MOBILE LAYOUT STRUCTURE (The Vertical Stack) --- */
+        /* This container organizes the mobile view into rows so they fit perfectly */
+        #mobile-layout-wrapper {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between; /* Space out Header, Content, Bag */
+            z-index: 10;
+            padding-bottom: 20px; /* Safe area for bottom controls */
+        }
+
+        /* --- BACKGROUND (Responsive Split) --- */
         .bg-container {
             position: fixed;
             inset: 0;
             display: flex;
-            flex-direction: column; /* Mobile first: Vertical split */
+            flex-direction: column; /* Mobile: Top/Bottom Split */
             z-index: -1;
         }
 
-        @media (min-width: 1024px) {
-            .bg-container { flex-direction: row; } /* Tablet/Desktop: Horizontal split */
-        }
-
         .bg-left {
-            height: 40%; width: 100%; /* Mobile */
+            width: 100%;
+            height: 60%; /* Mobile: White takes top 60% */
             background: #ffffff;
             background-image: radial-gradient(#efefef 1px, transparent 1px);
-            background-size: 30px 30px;
+            background-size: 25px 25px;
+            transition: height 0.5s ease;
         }
 
         .bg-right {
-            height: 60%; width: 100%; /* Mobile */
+            width: 100%;
+            height: 40%; /* Mobile: Color takes bottom 40% */
             transition: background 1s var(--cinematic-ease);
         }
 
-        @media (min-width: 1024px) {
-            .bg-left { width: 45%; height: 100%; }
-            .bg-right { width: 55%; height: 100%; }
+        /* --- HEADER --- */
+        header {
+            width: 100%;
+            padding: 1.5rem 2rem;
+            flex-shrink: 0; /* Don't shrink the logo */
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
 
-        /* Product Stage - Responsive Sizing */
+        /* --- CONTENT STACK (Text) --- */
+        .content-wrap {
+            padding: 0 2rem;
+            text-align: center;
+            z-index: 20;
+            margin-top: -5vh; /* Pull up slightly on mobile for balance */
+            transition: transform 0.6s var(--cinematic-ease), opacity 0.6s ease;
+        }
+
+        #hero-title { 
+            font-size: var(--fs-hero); 
+            line-height: 0.85; 
+            margin-bottom: 1rem; 
+            color: #000; 
+            letter-spacing: -0.04em;
+        }
+        
+        #hero-desc { 
+            font-size: var(--fs-desc); 
+            color: #666; 
+            margin-bottom: 1.5rem; 
+            line-height: 1.4;
+            display: block; /* Ensure visibility */
+        }
+
+        /* --- PRODUCT STAGE (The Bag) --- */
         .product-stage {
-            position: absolute;
-            top: 55%; left: 50%;
-            transform: translate(-50%, -50%);
-            width: 80vw; height: 80vw; /* Responsive square */
-            max-width: 500px; max-height: 500px;
-            pointer-events: none;
-            display: flex; justify-content: center; align-items: center;
+            position: relative;
+            width: 100%;
+            flex-grow: 1; /* Take up remaining space */
+            display: flex;
+            justify-content: center;
+            align-items: center; /* Center bag in the colored bottom area */
             z-index: 30;
         }
 
-        @media (min-width: 1024px) {
-            .product-stage { left: 45%; top: 50%; width: 600px; height: 600px; }
-        }
-
         .bag-image {
-            max-width: 100%; max-height: 100%;
-            filter: drop-shadow(0 30px 60px rgba(0,0,0,0.4));
-            transform: translateY(-120vh);
-            transition: transform 1.5s var(--bounce-ease), opacity 0.5s ease;
+            width: 75vw; /* Responsive Width for Mobile */
+            max-width: 320px; /* Cap size on larger phones */
+            height: auto;
+            filter: drop-shadow(0 20px 40px rgba(0,0,0,0.4));
+            transform: translateY(-100vh); /* Start in Sky */
+            transition: transform 1.2s var(--bounce-ease);
         }
 
         .bag-image.landed { transform: translateY(0); }
 
-        /* Price Tag - Smaller on Mobile */
+        /* --- PRICE TAG --- */
         .price-floater {
             position: absolute;
-            top: 10%; right: -5%;
-            width: 70px; height: 70px;
+            top: 10%; /* Adjust relative to bag container */
+            right: 15%; 
+            width: 70px;
+            height: 70px;
             border-radius: 50%;
-            background: rgba(255, 255, 255, 0.15);
-            backdrop-filter: blur(12px);
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(8px);
             border: 1px solid rgba(255, 255, 255, 0.4);
-            display: flex; flex-direction: column; justify-content: center; align-items: center;
-            color: white; z-index: 35;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
             animation: floatBob 4s ease-in-out infinite;
+            z-index: 35;
         }
-
-        @media (min-width: 768px) {
-            .price-floater { width: 100px; height: 100px; top: 20%; right: 0; }
-        }
-        
-        .currency { font-size: 0.7rem; }
-        .amount { font-size: 1.1rem; font-weight: 800; font-family: 'Playfair Display', serif; }
-        @media (min-width: 768px) { .amount { font-size: 1.5rem; } }
-
-        /* ThreeJS - Scaled for Mobile */
-        #three-container {
-            position: fixed;
-            bottom: 2%; left: 2%;
-            width: 120px; height: 120px;
-            z-index: 25; pointer-events: none;
-            opacity: 0; transition: opacity 1s ease;
-        }
-        @media (min-width: 768px) { #three-container { width: 200px; height: 200px; } }
-
-        /* Content Adjustments */
-        .content-wrap h1 { font-size: 3.5rem; }
-        @media (min-width: 768px) { .content-wrap h1 { font-size: 5rem; } }
-        @media (min-width: 1024px) { .content-wrap h1 { font-size: 8rem; } }
-
-        /* Character Box - Hidden on very small screens, visible on Tablets */
-        .char-box {
-            position: absolute;
-            right: 5%; top: 20%;
-            width: 80px; height: 110px;
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
-            border-radius: 12px;
-            overflow: hidden; z-index: 40;
-            display: none; /* Hide on mobile */
-        }
-        @media (min-width: 768px) { .char-box { display: block; top: 50%; transform: translateY(-50%); width: 140px; height: 180px; } }
-
-        /* Slide Classes */
-        .slide-out-left { transform: translateX(-150vw) rotate(-10deg); opacity: 0; }
-        .slide-out-right { transform: translateX(150vw) rotate(10deg); opacity: 0; }
-        .slide-in-right { transform: translateX(100vw); opacity: 0; }
-        .slide-in-left { transform: translateX(-100vw); opacity: 0; }
-
-        .ui-hidden { opacity: 0; transform: translateY(20px); }
-        .ui-visible { opacity: 1; transform: translateY(0); transition: all 1s var(--cinematic-ease); }
 
         @keyframes floatBob {
             0%, 100% { transform: translateY(0px); }
-            50% { transform: translateY(-15px); }
+            50% { transform: translateY(-8px); }
         }
+
+        .amount { font-size: 1.2rem; font-weight: 800; font-family: 'Playfair Display', serif; }
+        .currency { font-size: 0.8rem; vertical-align: top; }
+        .usd { font-size: 0.5rem; letter-spacing: 0.2em; font-weight: 600; text-transform: uppercase;}
+
+        /* --- CONTROLS --- */
+        .controls-wrapper {
+            position: absolute;
+            bottom: 30px;
+            right: 20px;
+            display: flex;
+            gap: 12px;
+            z-index: 50;
+        }
+
+        .control-btn {
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.9);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        /* --- 3D ELEMENT (Hidden/Small on Mobile to save performance/space) --- */
+        #three-container {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            width: 80px;
+            height: 80px;
+            z-index: 25;
+            pointer-events: none;
+            opacity: 0.8;
+        }
+
+        /* ================================================================= */
+        /* === DESKTOP OVERRIDES (min-width: 1024px) === */
+        /* This restores the original cinematic layout on big screens */
+        /* ================================================================= */
+        @media (min-width: 1024px) {
+            
+            /* Revert layout wrapper to block */
+            #mobile-layout-wrapper {
+                display: block;
+                padding: 0;
+            }
+
+            /* Split Background Left/Right */
+            .bg-container { flex-direction: row; }
+            .bg-left { width: 45%; height: 100%; }
+            .bg-right { width: 55%; height: 100%; }
+
+            /* Header Positioning */
+            header { padding: 2.5rem 3rem; }
+
+            /* Content Positioning (Absolute Left) */
+            .content-wrap {
+                position: absolute;
+                top: 50%;
+                left: 8%;
+                transform: translateY(-50%);
+                text-align: left;
+                width: 35%;
+                margin-top: 0;
+                padding: 0;
+            }
+
+            /* Text Sizes */
+            #hero-title { font-size: 6rem; }
+            #hero-desc { font-size: 1.1rem; max-width: 400px; margin-bottom: 2.5rem; }
+
+            /* Product Positioning (Absolute Center-ish) */
+            .product-stage {
+                position: absolute;
+                top: 50%;
+                left: 45%; /* On the split line */
+                transform: translate(-50%, -50%);
+                width: 600px; /* Fixed cinematic size */
+                height: 600px;
+                display: block; /* Remove flex centering */
+                flex-grow: 0;
+            }
+
+            .bag-image {
+                width: 100%;
+                max-width: none;
+                transform: translateY(-120vh); /* Higher drop on desktop */
+            }
+
+            /* Price Tag Positioning */
+            .price-floater {
+                top: 15%;
+                right: -5%;
+                width: 110px;
+                height: 110px;
+            }
+            .amount { font-size: 1.8rem; }
+
+            /* 3D Container */
+            #three-container {
+                width: 200px;
+                height: 200px;
+                bottom: 5%;
+                left: 5%;
+            }
+
+            /* Controls */
+            .controls-wrapper {
+                bottom: 50px;
+                right: 50px;
+                gap: 20px;
+            }
+            .control-btn { width: 60px; height: 60px; transition: transform 0.3s; }
+            .control-btn:hover { transform: scale(1.1); }
+        }
+
+        /* --- ANIMATION HELPERS --- */
+        .slide-out-left { transform: translateX(-120%) rotate(-5deg); opacity: 0; }
+        .slide-out-right { transform: translateX(120%) rotate(5deg); opacity: 0; }
+        .slide-in-right { transform: translateX(100%); opacity: 0; }
+        .slide-in-left { transform: translateX(-100%); opacity: 0; }
+        
+        /* Mobile Specific Slide adjustments */
+        @media (max-width: 1023px) {
+            .slide-out-left { transform: translateX(-100vw); opacity: 0; }
+            .slide-out-right { transform: translateX(100vw); opacity: 0; }
+        }
+
+        .ui-hidden { opacity: 0; transform: translateY(20px); }
+        .ui-visible { opacity: 1; transform: translateY(0); transition: all 0.8s ease; }
+
+        /* Button Styling */
+        .cta-btn {
+            background: transparent;
+            color: #000;
+            border-bottom: 2px solid #000;
+            padding-bottom: 5px;
+            text-transform: uppercase;
+            letter-spacing: 0.2em;
+            font-size: 0.8rem;
+            font-weight: 700;
+            cursor: pointer;
+        }
+        @media (min-width: 1024px) {
+            .cta-btn {
+                border-bottom: none;
+                writing-mode: vertical-rl;
+                padding: 2rem 1rem;
+                border-left: 2px solid rgba(0,0,0,0.1);
+            }
+            .cta-btn:hover { background: #000; color: white; border-left: 2px solid #000; }
+        }
+        
     </style>
 </head>
 <body>
@@ -151,142 +318,188 @@
 
     <div id="three-container"></div>
 
-    <header class="fixed top-0 left-0 w-full p-6 md:p-10 flex justify-between items-center z-50">
-        <div id="brand-logo" class="text-2xl md:text-3xl font-black tracking-tighter hero-font text-black ui-hidden">PIXI</div>
-        <nav id="top-nav" class="hidden md:flex space-x-12 pr-10 ui-hidden">
-            <a href="#" class="nav-link text-xs font-semibold uppercase tracking-widest">Shop</a>
-            <a href="#" class="nav-link text-xs font-semibold uppercase tracking-widest">About</a>
-        </nav>
-    </header>
+    <div id="mobile-layout-wrapper">
+        
+        <header>
+            <div id="brand-logo" class="text-2xl font-black tracking-tighter hero-font ui-hidden">PIXI</div>
+            <div class="lg:hidden text-xs font-bold tracking-widest ui-hidden">MENU</div> <nav id="top-nav" class="hidden lg:flex space-x-12 ui-hidden">
+                <a href="#" class="text-xs font-bold tracking-widest uppercase hover:opacity-50 transition">Shop</a>
+                <a href="#" class="text-xs font-bold tracking-widest uppercase hover:opacity-50 transition">About</a>
+            </nav>
+        </header>
 
-    <div class="fixed left-6 md:left-20 top-[15%] md:top-1/2 md:-translate-y-1/2 max-w-xs md:max-w-lg z-20">
         <div id="content-stack" class="content-wrap ui-hidden">
-            <h1 id="hero-title" class="mb-4 leading-none text-black font-black">Carry the Story</h1>
-            <p id="hero-desc" class="text-gray-500 text-sm md:text-xl mb-6 md:mb-10 leading-relaxed font-light">
-                Movie-inspired bags designed for heroes and legends.
-            </p>
-            <button class="border-l-2 border-black px-4 py-2 uppercase text-[10px] font-bold tracking-widest text-black hover:bg-black hover:text-white transition-all">
-                Explore
-            </button>
+            <h1 id="hero-title">Carry the<br>Story</h1>
+            <p id="hero-desc">Movie-inspired bags for everyday heroes.</p>
+            <button class="cta-btn">Explore Collection</button>
         </div>
+
+        <div class="product-stage">
+            <img id="main-bag" src="https://placehold.co/600x600/png?text=Spider+Bag" alt="Hero Bag" class="bag-image">
+            
+            <div id="price-tag" class="price-floater ui-hidden">
+                <span class="currency">$</span>
+                <span id="price-val" class="amount">13.99</span>
+                <span class="usd">USD</span>
+            </div>
+        </div>
+
     </div>
 
-    <div class="product-stage">
-        <img id="main-bag" src="bag1.png" alt="Hero Bag" class="bag-image">
-        <div id="price-tag" class="price-floater ui-hidden">
-            <span class="currency">$</span>
-            <span id="price-val" class="amount">13.99</span>
+    <div class="controls-wrapper ui-hidden" id="ui-controls">
+        <div onclick="prevSlide()" class="control-btn text-black hover:scale-110 transition">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
         </div>
-    </div>
-
-    <div id="char-preview" class="char-box ui-hidden">
-        <img id="char-img" src="img1.png" alt="Character" class="w-full h-full object-cover">
-    </div>
-
-    <div class="fixed bottom-8 right-6 md:bottom-12 md:right-12 flex space-x-4 md:space-x-6 z-50 ui-hidden" id="ui-controls">
-        <div onclick="prevSlide()" class="w-12 h-12 md:w-16 md:h-16 rounded-full bg-white/90 flex items-center justify-center cursor-pointer shadow-lg hover:scale-110 transition-transform">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
-        </div>
-        <div onclick="nextSlide()" class="w-12 h-12 md:w-16 md:h-16 rounded-full bg-white/90 flex items-center justify-center cursor-pointer shadow-lg hover:scale-110 transition-transform">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+        <div onclick="nextSlide()" class="control-btn text-black hover:scale-110 transition">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
         </div>
     </div>
 
     <script>
+        // --- DATA ---
+        // REPLACE URLS with your local files: 'bag1.png', 'img1.png'
         const slides = [
-            { id: 1, bag: "bag1.png", charImg: "img1.png", title: "Carry the Story", background: "#8B0000", price: "13.99", hex: 0x8B0000 },
-            { id: 2, bag: "bag2.png", charImg: "img2.png", title: "First Avenger", background: "#001f3f", price: "14.99", hex: 0x001f3f },
-            { id: 3, bag: "bag3.png", charImg: "img3.png", title: "God of Thunder", background: "#004d00", price: "15.00", hex: 0x004d00 }
+            {
+                id: 1,
+                bag: "https://placehold.co/600x600/8B0000/FFFFFF/png?text=Spider+Bag",
+                title: "Carry the\nStory",
+                desc: "Movie-inspired bags for everyday heroes.",
+                background: "#8B0000",
+                price: "13.99",
+                hex: 0x8B0000
+            },
+            {
+                id: 2,
+                bag: "https://placehold.co/600x600/001f3f/FFFFFF/png?text=Cap+Bag",
+                title: "First\nAvenger",
+                desc: "Timeless design built for the long haul.",
+                background: "#001f3f",
+                price: "14.99",
+                hex: 0x001f3f
+            },
+            {
+                id: 3,
+                bag: "https://placehold.co/600x600/004d00/FFFFFF/png?text=Loki+Bag",
+                title: "God of\nThunder",
+                desc: "Burdened with glorious purpose and style.",
+                background: "#004d00",
+                price: "15.00",
+                hex: 0x004d00
+            }
         ];
 
         let currentIdx = 0;
+        let isAnimating = false;
+
+        // Elements
         const mainBag = document.getElementById('main-bag');
         const dynamicBg = document.getElementById('dynamic-bg');
         const contentStack = document.getElementById('content-stack');
         const heroTitle = document.getElementById('hero-title');
-        const charImg = document.getElementById('char-img');
+        const heroDesc = document.getElementById('hero-desc');
         const priceVal = document.getElementById('price-val');
         const priceTag = document.getElementById('price-tag');
 
-        // ThreeJS setup remains same but size is handled via CSS
-        let scene, camera, renderer, artifact, outerRing;
-
+        // --- 3D SETUP ---
+        let scene, camera, renderer, artifact;
         function initThree() {
             const container = document.getElementById('three-container');
+            const w = container.clientWidth;
+            const h = container.clientHeight;
             scene = new THREE.Scene();
-            camera = new THREE.PerspectiveCamera(75, 1, 0.1, 1000);
+            camera = new THREE.PerspectiveCamera(75, w / h, 0.1, 1000);
             renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
-            renderer.setSize(200, 200);
-            renderer.setPixelRatio(window.devicePixelRatio);
+            renderer.setSize(w, h);
             container.appendChild(renderer.domElement);
-
-            const geometry = new THREE.IcosahedronGeometry(1.5, 0);
-            const material = new THREE.MeshPhongMaterial({ color: 0x8B0000, wireframe: true });
-            artifact = new THREE.Mesh(geometry, material);
+            
+            // Shape
+            const geo = new THREE.IcosahedronGeometry(1.5, 0);
+            const mat = new THREE.MeshPhongMaterial({ color: 0x8B0000, wireframe: true });
+            artifact = new THREE.Mesh(geo, mat);
             scene.add(artifact);
-
-            const light = new THREE.PointLight(0xffffff, 2, 100);
-            light.position.set(10, 10, 10);
+            
+            // Light
+            const light = new THREE.DirectionalLight(0xffffff, 2);
+            light.position.set(1, 1, 2);
             scene.add(light);
-            scene.add(new THREE.AmbientLight(0x404040));
-            camera.position.z = 5;
-            animateThree();
+            
+            camera.position.z = 4;
+            
+            function animate() {
+                requestAnimationFrame(animate);
+                artifact.rotation.x += 0.01;
+                artifact.rotation.y += 0.02;
+                renderer.render(scene, camera);
+            }
+            animate();
         }
-
-        function animateThree() {
-            requestAnimationFrame(animateThree);
-            if(artifact) { artifact.rotation.x += 0.01; artifact.rotation.y += 0.015; }
-            renderer.render(scene, camera);
-        }
-
-        function updateThreeColor(hexColor) {
-            if(artifact) artifact.material.color.setHex(hexColor);
-        }
-
         initThree();
 
-        window.addEventListener('DOMContentLoaded', () => {
-            setTimeout(() => {
-                document.querySelectorAll('.ui-hidden').forEach(el => el.classList.replace('ui-hidden', 'ui-visible'));
-                document.getElementById('three-container').style.opacity = '1';
-                mainBag.classList.add('landed');
-            }, 500);
-        });
+        // --- ANIMATION LOGIC ---
+        window.onload = () => {
+            document.querySelectorAll('.ui-hidden').forEach(el => el.classList.replace('ui-hidden', 'ui-visible'));
+            mainBag.classList.add('landed');
+        };
 
-        function updateSlide(direction) {
-            const nextIdx = (direction === 'next') ? (currentIdx + 1) % slides.length : (currentIdx - 1 + slides.length) % slides.length;
-            const nextSlideData = slides[nextIdx];
+        function updateSlide(dir) {
+            if(isAnimating) return;
+            isAnimating = true;
 
-            contentStack.classList.add('slide-out-left');
-            mainBag.classList.add('slide-out-left');
+            const nextIdx = (dir === 'next') ? (currentIdx + 1) % slides.length : (currentIdx - 1 + slides.length) % slides.length;
+            const data = slides[nextIdx];
+
+            // Exit
+            let exit = dir === 'next' ? 'slide-out-left' : 'slide-out-right';
+            let enter = dir === 'next' ? 'slide-in-right' : 'slide-in-left';
+
+            contentStack.classList.add(exit);
             mainBag.classList.remove('landed');
+            mainBag.classList.add(exit);
             priceTag.style.opacity = '0';
 
             setTimeout(() => {
+                // Swap Data
                 currentIdx = nextIdx;
-                heroTitle.innerText = nextSlideData.title;
-                mainBag.src = nextSlideData.bag;
-                charImg.src = nextSlideData.charImg;
-                dynamicBg.style.background = nextSlideData.background;
-                priceVal.innerText = nextSlideData.price;
-                updateThreeColor(nextSlideData.hex);
+                heroTitle.innerHTML = data.title.replace('\n', '<br>');
+                heroDesc.innerText = data.desc;
+                mainBag.src = data.bag;
+                priceVal.innerText = data.price;
+                dynamicBg.style.background = data.background;
+                if(artifact) artifact.material.color.setHex(data.hex);
 
-                contentStack.classList.remove('slide-out-left');
-                mainBag.style.transition = 'none';
-                mainBag.classList.remove('slide-out-left');
-                mainBag.classList.add('slide-in-right');
-
+                // Reset Positions
+                contentStack.classList.remove(exit);
+                mainBag.classList.remove(exit);
+                
+                // Enter
+                contentStack.classList.add(enter);
+                mainBag.classList.add(enter);
+                
+                // Force Browser Paint
                 void mainBag.offsetWidth;
 
-                mainBag.style.transition = 'all 1s var(--bounce-ease)';
-                mainBag.classList.remove('slide-in-right');
-                mainBag.classList.add('landed');
-                priceTag.style.opacity = '1';
-            }, 800);
+                setTimeout(() => {
+                    contentStack.classList.remove(enter);
+                    mainBag.classList.remove(enter);
+                    mainBag.classList.add('landed');
+                    priceTag.style.opacity = '1';
+                    isAnimating = false;
+                }, 50);
+
+            }, 600);
         }
 
         function nextSlide() { updateSlide('next'); }
         function prevSlide() { updateSlide('prev'); }
+
+        // --- TOUCH SWIPE ---
+        let xStart = 0;
+        document.addEventListener('touchstart', e => xStart = e.changedTouches[0].screenX);
+        document.addEventListener('touchend', e => {
+            let xEnd = e.changedTouches[0].screenX;
+            if (xEnd < xStart - 50) nextSlide();
+            if (xEnd > xStart + 50) prevSlide();
+        });
     </script>
 </body>
 </html>
